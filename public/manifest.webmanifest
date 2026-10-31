@@ -1,0 +1,24 @@
+{
+  "name": "Sol & Luna",
+  "short_name": "Sol & Luna",
+  "description": "A two-player co-op adventure for two devices on the same Wi-Fi",
+  "lang": "en",
+  "start_url": "/",
+  "scope": "/",
+  "display": "fullscreen",
+  "orientation": "landscape",
+  "background_color": "#241a36",
+  "theme_color": "#241a36",
+  "icons": [
+    {
+      "src": "/icon-180.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

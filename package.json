@@ -1,0 +1,23 @@
+{
+  "name": "sol-and-luna",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Sol & Luna: a two-player co-op 3D platformer for the browser. Play with a friend over your Wi-Fi, on computers or phones.",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "test": "node test/levelgen.test.js && node test/modes.test.js && node test/physics.test.js && node test/save.test.js",
+    "test:e2e": "node test/smoke.mjs && node test/coop.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "three": "0.186.1",
+    "ws": "8.22.0"
+  },
+  "devDependencies": {
+    "puppeteer-core": "^25.13.0"
+  },
+  "license": "MIT"
+}

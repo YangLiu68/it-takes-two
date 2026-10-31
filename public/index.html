@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover" />
+  <title>Sol &amp; Luna — a two-player co-op adventure</title>
+  <!-- Add to Home Screen on iPhone: opens full screen, like an app. -->
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Sol &amp; Luna" />
+  <meta name="theme-color" content="#241a36" />
+  <link rel="apple-touch-icon" href="/icon-180.png" />
+  <link rel="manifest" href="/manifest.webmanifest" />
+  <meta name="description" content="Sol &amp; Luna: a two-player co-op adventure for two devices on the same Wi-Fi. Obstacle courses, escape rooms and horror nights." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='22' cy='32' r='16' fill='%23ff6b4a'/%3E%3Ccircle cx='42' cy='32' r='16' fill='%234f86ff' fill-opacity='.9'/%3E%3C/svg%3E" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/style.css" />
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "/vendor/three/build/three.module.js",
+        "three/addons/": "/vendor/three/examples/jsm/"
+      }
+    }
+  </script>
+</head>
+<body>
+  <canvas id="view"></canvas>
+
+  <!-- In-game HUD -->
+  <div id="hud" hidden>
+    <div class="hud-tl">
+      <div class="pill level-pill">
+        <span id="hud-level-num" class="lvl-num">Level 1</span>
+        <span id="hud-level-name" class="lvl-name"></span>
+      </div>
+      <div id="hud-progress" class="progress"></div>
+    </div>
+    <div class="hud-tr">
+      <div class="pill gem-pill" id="hud-gems">
+        <span class="gem-icon" aria-hidden="true"></span>
+        <span id="hud-gem-count">0</span><span class="dim">/<span id="hud-gem-total">0</span></span>
+      </div>
+      <div class="pill net-pill" id="hud-net"><span class="dot"></span><span id="hud-ping">–</span></div>
+      <button class="pill notes-pill" id="hud-notes" hidden title="Journal (J)"><span class="notes-icon" aria-hidden="true"></span><span id="hud-notes-count">0/0</span></button>
+      <div class="pill carry-pill" id="hud-carry" hidden><span class="carry-dot"></span><span class="carry-name"></span></div>
+    </div>
+    <div id="hud-objective" class="objective"></div>
+    <div id="hud-subtitle" class="subtitle"></div>
+    <div id="hud-toasts" class="toasts"></div>
+    <div id="hud-status" class="status"></div>
+    <div id="hud-prompt" class="prompt"></div>
+    <div id="hud-hint" class="hint"></div>
+    <div id="reticle" class="reticle"><span></span></div>
+    <div id="partner-tag" class="partner-tag"><span class="name"></span><span class="dist"></span><i></i></div>
+    <div id="partner-arrow" class="partner-arrow"></div>
+    <div id="click-to-play" class="click-to-play">Click to play</div>
+    <div id="title-card" class="title-card"><div class="tc-level"></div><div class="tc-name"></div><div class="tc-sub"></div></div>
+  </div>
+
+  <!-- Story: intro/outro/journal card, found notes, scares -->
+  <div id="story-card" class="story-card">
+    <div class="sc-inner">
+      <div class="sc-kicker"></div>
+      <h2 class="sc-title"></h2>
+      <div class="sc-body"></div>
+      <button class="btn ghost small sc-close">Close</button>
+    </div>
+  </div>
+  <div id="note-card" class="note-card">
+    <div class="nc-who"></div>
+    <div class="nc-title"></div>
+    <div class="nc-text"></div>
+    <button class="nc-close" aria-label="Close">×</button>
+  </div>
+  <div id="scare" class="scare"><canvas width="512" height="512"></canvas><div class="scare-text"></div></div>
+
+  <!-- Phone controls, shown while playing on a touch screen -->
+  <div id="touch" class="touch" hidden>
+    <div class="t-stick"><div class="t-knob"></div></div>
+    <button class="t-pause" data-act="pause" aria-label="Pause"><span></span><span></span></button>
+    <div class="t-pad">
+      <button class="t-btn t-magnet" data-act="ability">MAGNET</button>
+      <button class="t-btn t-pound" data-act="pound">POUND</button>
+      <button class="t-btn t-dash" data-act="dash">DASH</button>
+      <button class="t-btn t-jump" data-act="jump">JUMP</button>
+    </div>
+    <div class="t-help">Left thumb: move · Swipe on the right: look around</div>
+  </div>
+
+  <div id="rotate" class="rotate">
+    <div class="rotate-phone"></div>
+    <div class="rotate-text">Turn your phone sideways to play</div>
+  </div>
+
+  <div id="fade"></div>
+  <div id="countdown"></div>
+
+  <!-- Lobby -->
+  <section id="lobby" class="screen lobby">
+    <div class="lobby-card" id="lobby-card">
+      <header class="brand">
+        <h1><span class="w1">Sol</span> <span class="w2">&amp;</span> <span class="w3">Luna</span></h1>
+        <p class="tagline">A two-player co-op adventure: courses, escape rooms and horror nights.<br />Two devices, one Wi-Fi.</p>
+      </header>
+
+      <div class="players">
+        <div class="pcard" data-slot="0">
+          <div class="face sol"><i class="eye l"></i><i class="eye r"></i><i class="smile"></i></div>
+          <div class="pinfo">
+            <div class="cname">Sol</div>
+            <div class="pname">Waiting...</div>
+            <div class="pstate"></div>
+          </div>
+        </div>
+        <button id="swap" class="swap" title="Swap characters" aria-label="Swap characters">⇄</button>
+        <div class="pcard" data-slot="1">
+          <div class="face luna"><i class="eye l"></i><i class="eye r"></i><i class="smile"></i></div>
+          <div class="pinfo">
+            <div class="cname">Luna</div>
+            <div class="pname">Waiting...</div>
+            <div class="pstate"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="modes" id="modes" role="tablist">
+        <button class="mode-tab" data-tab="course" role="tab"><b>Campaign</b><span>Obstacles &amp; pranks</span></button>
+        <button class="mode-tab" data-tab="puzzle" role="tab"><b>Escape Rooms</b><span>Keys &amp; codes</span></button>
+        <button class="mode-tab horror" data-tab="horror" role="tab"><b>Horror</b><span>Night after night</span></button>
+      </div>
+
+      <div class="fields" id="fields">
+        <label class="field">
+          <span>Your name</span>
+          <input id="name" maxlength="16" autocomplete="off" spellcheck="false" placeholder="Player" />
+        </label>
+        <label class="field" id="seed-field">
+          <span>World seed</span>
+          <div class="seed-row">
+            <input id="seed" maxlength="24" autocomplete="off" spellcheck="false" />
+            <button id="dice" class="icon-btn" title="Roll a new world" aria-label="Roll a new world">🎲</button>
+          </div>
+        </label>
+        <label class="field small">
+          <span id="level-label">Level</span>
+          <select id="level-select"></select>
+        </label>
+      </div>
+      <p class="mode-blurb" id="mode-blurb"></p>
+
+      <div id="save-card" class="save-card" hidden>
+        <div class="save-info">
+          <div class="save-title" id="save-title">Saved game</div>
+          <div class="save-detail" id="save-detail"></div>
+        </div>
+        <div class="save-actions">
+          <button id="save-load" class="btn ghost small">Load save</button>
+          <button id="save-reset" class="btn ghost small">Start over</button>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="ready" class="btn primary big">Ready!</button>
+        <button id="solo" class="btn ghost" hidden>Explore solo</button>
+      </div>
+      <div id="lobby-status" class="lobby-status"></div>
+
+      <div class="share" id="share">
+        <div class="share-label">Your partner opens this link on the same Wi-Fi:</div>
+        <div class="share-row">
+          <code id="share-url">...</code>
+          <button id="copy" class="btn ghost small">Copy</button>
+        </div>
+      </div>
+
+      <details class="controls">
+        <summary>Controls</summary>
+        <div class="ctrl-grid">
+          <span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd></span><span>Move</span>
+          <span><kbd>Mouse</kbd></span><span>Look around (wheel to zoom)</span>
+          <span><kbd>Space</kbd></span><span>Jump · press again in mid-air to double jump</span>
+          <span><kbd>Shift</kbd></span><span>Dash</span>
+          <span><kbd>C</kbd></span><span>Ground pound (works standing, too)</span>
+          <span><kbd>E</kbd> / <kbd>Left click</kbd></span><span>Magnet: pull, push off, call your partner</span>
+          <span><kbd>G</kbd></span><span>Wave</span>
+          <span><kbd>J</kbd></span><span>Journal (notes found in horror stories)</span>
+          <span><kbd>Esc</kbd></span><span>Menu</span>
+        </div>
+        <p class="pad-note">Gamepads work too: A jump · X dash · B pound · RB magnet. On a phone, turn it sideways and buttons appear on screen.</p>
+      </details>
+    </div>
+  </section>
+
+  <!-- Pause -->
+  <section id="pause" class="screen dim" hidden>
+    <div class="panel">
+      <h2>Paused</h2>
+      <p class="sub">The game keeps going for your partner.</p>
+      <button id="resume" class="btn primary big">Resume</button>
+      <div class="settings">
+        <label>Mouse sensitivity <input id="set-sens" type="range" min="0.2" max="3" step="0.05" /></label>
+        <label>Music <input id="set-music" type="range" min="0" max="1" step="0.05" /></label>
+        <label>Volume <input id="set-vol" type="range" min="0" max="1" step="0.05" /></label>
+        <label>Graphics
+          <select id="set-quality">
+            <option value="auto">Auto</option>
+            <option value="high">High</option>
+            <option value="medium">Medium</option>
+            <option value="low">Low</option>
+          </select>
+        </label>
+        <label class="check"><input id="set-invert" type="checkbox" /> Invert vertical look</label>
+        <label class="check"><input id="set-hints" type="checkbox" /> Show hints</label>
+      </div>
+      <div class="row">
+        <button id="restart" class="btn ghost">Restart level</button>
+        <button id="to-lobby" class="btn ghost">Back to lobby</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Level complete -->
+  <section id="complete" class="screen dim" hidden>
+    <div class="panel celebrate">
+      <div class="stars" id="stars"><span>★</span><span>★</span><span>★</span></div>
+      <h2 id="complete-title">Level clear!</h2>
+      <p class="sub" id="complete-name"></p>
+      <div class="complete-story" id="complete-story" hidden></div>
+      <div class="stats">
+        <div><b id="stat-time">0:00</b><span>Time</span></div>
+        <div><b id="stat-gems">0/0</b><span id="stat-gems-label">Gold buttons</span></div>
+        <div><b id="stat-falls">0 · 0</b><span>Falls (Sol · Luna)</span></div>
+      </div>
+      <div class="complete-next" id="complete-next" hidden></div>
+      <div class="complete-actions">
+        <button id="continue" class="btn primary big">Next level</button>
+        <button id="complete-lobby" class="btn ghost" hidden>Back to lobby</button>
+      </div>
+      <div id="continue-status" class="sub small"></div>
+    </div>
+  </section>
+
+  <div id="banner" class="banner" hidden></div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
