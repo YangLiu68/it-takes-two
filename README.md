@@ -1,4 +1,4 @@
-# Sol & Luna
+# It Takes Two
 
 **A two-player co-op 3D platformer that runs in the browser.** One computer runs a tiny
 server; you and a friend join from any two devices on the same Wi-Fi: laptops, desktops
